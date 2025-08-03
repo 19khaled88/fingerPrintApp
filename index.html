@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fingerprint Auth (Web Only)</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin-top: 50px;
+    }
+    button {
+      padding: 12px 24px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #status {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h2>Biometric Authentication (WebAuthn)</h2>
+  <button id="authBtn">Authenticate with Fingerprint</button>
+  <button id="fingerBtn">Login with Fingerprint</button>
+  <div id="status"></div>
+
+  <script>
+    async function authenticate() {
+      const status = document.getElementById("status");
+
+      // Check WebAuthn support
+      if (!window.PublicKeyCredential) {
+        status.textContent = "WebAuthn is not supported on this browser.";
+        return;
+      }
+
+      try {
+        // Fake challenge from server (should be random bytes from your server)
+        const challenge = new Uint8Array(32);
+        window.crypto.getRandomValues(challenge);
+
+        const allowCredentials = [
+          {
+            id: Uint8Array.from(window.atob("AaBbCcDd1234=="), c => c.charCodeAt(0)), // Fake ID, base64-decode from server
+            type: "public-key",
+            transports: ["internal"]
+          }
+        ];
+
+        const assertion = await navigator.credentials.get({
+          publicKey: {
+            challenge: challenge.buffer,
+            timeout: 60000,
+            allowCredentials,
+            userVerification: "required"
+          }
+        });
+
+        console.log("Assertion:", assertion);
+        status.textContent = "Authentication successful!";
+      } catch (err) {
+        console.error(err);
+        status.textContent = `Authentication failed: ${err.message}`;
+      }
+    }
+
+
+    async function doFingerprintLogin() {
+      try {
+        const credential = await navigator.credentials.get({
+          publicKey: {
+            challenge: new Uint8Array(32), // dummy challenge
+            timeout: 60000,
+            allowCredentials: [],
+            userVerification: "preferred"
+          }
+        });
+
+        if (credential) {
+          alert("Fingerprint/Face ID Success!");
+          // You can send credential info to server for verification
+        }
+      } catch (err) {
+        console.log(err)
+        alert("Authentication failed: " + err.message);
+      }
+    }
+
+    
+    document.getElementById("authBtn").addEventListener("click", authenticate);
+
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const btn = document.getElementById("fingerBtn");
+      if (btn) btn.addEventListener("click", doFingerprintLogin);
+    });
+
+  </script>
+</body>
+</html>
